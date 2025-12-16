@@ -31,6 +31,11 @@
       "name": "ecommerce",
       "path": "ecommerce",
       "auth": "admin"
+    },
+    {
+      "name": "crm",
+      "path": "crm",
+      "auth": "admin"
     }
   ]
 }
