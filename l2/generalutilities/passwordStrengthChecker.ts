@@ -66,7 +66,7 @@ export class PasswordStrengthCheckerPage extends CollabPageElement {
       this.strengthLabel = 'Fraca';
       this.requestUpdate();
       return;
-    } 
+    }
     // Basic heuristics: length, character variety, penalties for common patterns
     let score = 0;
     // Length contribution (max 40 points)
