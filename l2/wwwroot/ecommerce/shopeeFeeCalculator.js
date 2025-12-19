@@ -6382,6 +6382,12 @@ var b3 = class extends HTMLElement {
 b3.elementStyles = [], b3.shadowRootOptions = { mode: "open" }, b3[m3("elementProperties")] = /* @__PURE__ */ new Map(), b3[m3("finalized")] = /* @__PURE__ */ new Map(), _3?.({ ReactiveElement: b3 }), (f3.reactiveElementVersions ??= []).push("2.0.4");
 
 // virtual:/_100554_/l2/collabState.js
+function getState(key) {
+  return globalState.globalStateManagment.getState(key);
+}
+function setState(key, value, systemChange) {
+  globalState.globalStateManagment.setState(key, value, systemChange);
+}
 function subscribe(keyOrKeys, component) {
   return globalState.globalStateManagment.subscribe(keyOrKeys, component);
 }
@@ -6954,7 +6960,7 @@ function convertTagToFileName(tag) {
   };
 }
 
-// virtual:/_100554_/l2/collabPageElement
+// virtual:/_100554_/l2/collabPageElement.js
 var __decorate3 = function(decorators, target, key, desc) {
   var c4 = arguments.length, r4 = c4 < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d4;
   if (typeof Reflect === "object" && typeof Reflect.decorate === "function")
@@ -7097,284 +7103,6 @@ __decorate3([
   w2({ type: String, reflect: true })
 ], CollabPageElement.prototype, "level", void 0);
 
-// virtual:/_100554_/l2/collabState
-function getState(key) {
-  return globalState2.globalStateManagment.getState(key);
-}
-function setState(key, value, systemChange) {
-  globalState2.globalStateManagment.setState(key, value, systemChange);
-}
-function initState2(path, value) {
-  const keys = path.split(".");
-  if (!globalState2._ica) {
-    globalState2._ica = {};
-  }
-  let current = globalState2._ica;
-  keys.forEach((key, index) => {
-    if (!current[key]) {
-      current[key] = index === keys.length - 1 ? value : {};
-    } else if (index === keys.length - 1 && typeof current[key] === "object" && typeof value === "object") {
-      if (Array.isArray(current[key]) && Array.isArray(value)) {
-        current[key] = [...value];
-      } else {
-        current[key] = { ...value };
-      }
-    }
-    current = current[key];
-  });
-}
-var isTrace3 = false;
-var globalState2 = {};
-function getCollabWindow2() {
-  if (window.parent && window.parent !== window && window.parent.globalStateManagment) {
-    return window.parent;
-  }
-  return window;
-}
-window.getCollabWindow = getCollabWindow2;
-Object.defineProperty(globalState2, "_ica", {
-  get: function() {
-    return getCollabWindow2()._ica;
-  },
-  set: function(v3) {
-    getCollabWindow2()._ica = v3;
-  }
-});
-Object.defineProperty(globalState2, "globalStateManagment", {
-  get: function() {
-    return getCollabWindow2().globalStateManagment;
-  },
-  set: function(v3) {
-    getCollabWindow2().globalStateManagment = v3;
-  }
-});
-Object.defineProperty(globalState2, "globalVariation", {
-  get: function() {
-    return getCollabWindow2().globalVariation;
-  },
-  set: function(v3) {
-    getCollabWindow2().globalVariation = v3;
-  }
-});
-function getPathValue2(obj, path) {
-  return (path || "").split(".").reduce((acc, part) => {
-    if (acc == null)
-      return void 0;
-    const arrayMatch = part.match(/^(\w+)\[(\d+)\]$/);
-    if (arrayMatch) {
-      const prop = arrayMatch[1];
-      const index = parseInt(arrayMatch[2], 10);
-      return acc[prop]?.[index];
-    }
-    return acc[part];
-  }, obj);
-}
-function setPathValue2(obj, path, value) {
-  const parts = (path || "").split(".");
-  const last = parts.pop();
-  if (!last)
-    return;
-  let lastObj;
-  try {
-    lastObj = parts.reduce((acc, part) => {
-      const match = part.match(/^(\w+)\[(\d+)\]$/);
-      if (match) {
-        const prop = match[1];
-        const index = parseInt(match[2], 10);
-        acc[prop] = acc[prop] || [];
-        acc[prop][index] = acc[prop][index] || {};
-        return acc[prop][index];
-      } else {
-        acc[part] = acc[part] || {};
-        return acc[part];
-      }
-    }, obj);
-  } catch (e5) {
-    const isArray = parts.some((p4) => /^\w+\[\d+\]$/.test(p4));
-    initState2(parts.join("."), isArray ? [] : {});
-    obj = globalState2._ica;
-    lastObj = parts.reduce((acc, part) => {
-      const match = part.match(/^(\w+)\[(\d+)\]$/);
-      if (match) {
-        const prop = match[1];
-        const index = parseInt(match[2], 10);
-        acc[prop] = acc[prop] || [];
-        acc[prop][index] = acc[prop][index] || {};
-        return acc[prop][index];
-      } else {
-        acc[part] = acc[part] || {};
-        return acc[part];
-      }
-    }, obj);
-  }
-  const lastIsArray = /^\w+\[\d+\]$/.test(last);
-  if (lastIsArray && !Array.isArray(lastObj[last]))
-    lastObj[last] = [];
-  if (!lastIsArray && typeof lastObj[last] !== "object")
-    lastObj[last] = {};
-  lastObj[last] = value;
-}
-var CollabStateSingleton2 = class {
-  constructor() {
-    this.componentMap = /* @__PURE__ */ new Map();
-    this.history = [];
-    this.notifyQueue = [];
-    this.isNotifying = false;
-  }
-  getState(key) {
-    const value = getPathValue2(globalState2._ica, key);
-    if (isTrace3)
-      console.info("getState key: " + key + " value=", value);
-    return value;
-  }
-  setState(key, value, systemChange) {
-    systemChange = systemChange ?? false;
-    const oldValue = getPathValue2(globalState2._ica, key);
-    ;
-    if (isTrace3)
-      console.info("setState key: " + key + " value=", value, ", oldValue=", oldValue);
-    if (oldValue === value)
-      return;
-    const notifies = [key];
-    if (typeof value === "object" && value !== null) {
-      const n4 = this.getNotifies(key, value);
-      for (const path of n4) {
-        const oldValue2 = getPathValue2(globalState2._ica, path);
-        const newValue = getPathValue2(value, path.replace(key + ".", ""));
-        if (oldValue2 !== newValue)
-          notifies.push(path);
-      }
-    }
-    setPathValue2(globalState2._ica, key, value);
-    this.logHistory(key, value, systemChange);
-    this.notify(notifies);
-  }
-  getNotifies(path, newObj) {
-    const ret = [];
-    const visit = (currentPath, value) => {
-      if (value && typeof value === "object") {
-        Object.keys(value).forEach((k2) => {
-          const nextPath = /^\d+$/.test(k2) ? `${currentPath}[${k2}]` : `${currentPath}.${k2}`;
-          if (this.componentMap.has(nextPath)) {
-            ret.push(nextPath);
-          }
-          visit(nextPath, value[k2]);
-        });
-      }
-    };
-    visit(path, newObj);
-    return ret;
-  }
-  logHistory(key, value, system) {
-    const entry = {
-      timestamp: Date.now(),
-      system,
-      key,
-      value
-    };
-    this.history.push(entry);
-    if (this.history.length > 1e4) {
-      this.history.shift();
-    }
-  }
-  getHistory() {
-    return this.history;
-  }
-  clearHistory() {
-    this.history = [];
-  }
-  subscribe(keyOrKeys, component, id) {
-    const keys = Array.isArray(keyOrKeys) ? keyOrKeys : [keyOrKeys];
-    keys.forEach((key) => {
-      if (!key.includes(";"))
-        key = `;${key}`;
-      if (isTrace3)
-        console.log("subscribe key(s)", keyOrKeys);
-      const isExclusive = key.startsWith("*");
-      if (isExclusive) {
-        this.componentMap.delete(key);
-      }
-      if (!this.componentMap.has(key)) {
-        this.componentMap.set(key, /* @__PURE__ */ new Set());
-      }
-      this.componentMap.get(key).add(component);
-    });
-  }
-  unsubscribe(keyOrKeys, component) {
-    const keys = Array.isArray(keyOrKeys) ? keyOrKeys : [keyOrKeys];
-    keys.forEach((key) => {
-      if (!key.includes(";"))
-        key = `;${key}`;
-      if (component === "*") {
-        if (isTrace3)
-          console.log("unsubscribe key", key, " all components");
-        this.componentMap.set(key, /* @__PURE__ */ new Set());
-      } else {
-        if (isTrace3)
-          console.log("unsubscribe key", key, this.componentMap.get(key)?.has(component));
-        this.componentMap.get(key)?.delete(component);
-      }
-    });
-  }
-  notify(keys) {
-    if (typeof keys === "string")
-      keys = [keys];
-    for (const key of keys) {
-      if (!this.notifyQueue.includes(key)) {
-        this.notifyQueue.push(key);
-      }
-    }
-    if (this.isNotifying)
-      return;
-    this.isNotifying = true;
-    let nextKey = "";
-    try {
-      while (this.notifyQueue.length > 0) {
-        nextKey = this.notifyQueue.shift();
-        if (isTrace3)
-          console.log(`notify key=${nextKey}`, this.componentMap);
-        Array.from(this.componentMap).find((map) => {
-          const [stateKey, arr] = map;
-          const path = stateKey.split(";")[1];
-          if (path !== nextKey)
-            return;
-          arr.forEach((component) => {
-            if ("handleIcaStateChange" in component) {
-              component["handleIcaStateChange"](nextKey, this.getState(nextKey));
-            } else if (typeof component === "function") {
-              component(nextKey, this.getState(nextKey));
-            } else {
-              console.error("invalid notify on key: " + nextKey);
-            }
-          });
-        });
-      }
-    } catch (e5) {
-      console.error("error on notify, key: " + nextKey, e5);
-    } finally {
-      this.isNotifying = false;
-    }
-  }
-  getStateStatistics() {
-    const statistics = /* @__PURE__ */ new Map();
-    this.componentMap.forEach((value, key) => {
-      statistics.set(key, value.size);
-    });
-    return statistics;
-  }
-};
-function getCollabStateInstance2() {
-  const win = getCollabWindow2();
-  if (!win.collabState) {
-    win.collabState = new CollabStateSingleton2();
-  }
-  return win.collabState;
-}
-if (!globalState2.globalStateManagment)
-  globalState2.globalStateManagment = getCollabStateInstance2();
-if (!globalState2._ica)
-  globalState2._ica = {};
-
 // virtual:/_102022_/l2/ecommerce/shopeeFeeCalculator
 var __decorate4 = function(decorators, target, key, desc) {
   var c4 = arguments.length, r4 = c4 < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d4;
@@ -7399,7 +7127,7 @@ var EcommerceShopeeFeeCalculator102022 = class EcommerceShopeeFeeCalculator10202
   initPage() {
     setState("ui.mdm.pageTitle.title", `Calculadora de Taxas - Shopee`);
     const savedConfig = getState("ui.shopeeFeeCalculator.config");
-    initState2("ui.shopeeFeeCalculator.config", {
+    initState("ui.shopeeFeeCalculator.config", {
       commissionPercent: savedConfig?.commissionPercent ?? 12,
       paymentFeePercent: savedConfig?.paymentFeePercent ?? 2.5,
       currency: savedConfig?.currency ?? "BRL"
@@ -7535,100 +7263,101 @@ var EcommerceShopeeFeeCalculator102022 = class EcommerceShopeeFeeCalculator10202
   renderHistory() {
     const history = this.getHistoryArray();
     return Z`
-    <div class="mt-6 bg-white p-4 rounded-lg shadow">
-      <div class="flex items-center justify-between">
-        <h3 class="text-lg font-semibold text-gray-800">Histórico de Cálculos</h3>
-        <div class="flex items-center gap-2">
-          <button @click="${() => this.clearHistory()}" class="px-3 py-1 bg-red-600 text-white rounded text-sm">Limpar tudo</button>
-          <button @click="${() => this.exportCsv()}" class="px-3 py-1 bg-green-600 text-white rounded text-sm">Exportar CSV</button>
-        </div>
-      </div>
-      <div class="mt-4">
-        ${history.length === 0 ? Z`<p class="text-gray-600">Nenhum registro salvo ainda. Use "Salvar histórico" após um cálculo para criar entradas.</p>` : Z`
-          <ul class="space-y-3">
-            ${history.map((entry, i4) => Z`
-              <li class="border rounded p-3 flex justify-between items-start bg-gray-50">
-                <div>
-                  <div class="text-sm text-gray-500">${new Date(entry.date).toLocaleString("pt-BR")}</div>
-                  <div class="mt-1 text-gray-800">
-                    <div>Preço: R$ ${Number(entry.price || 0).toFixed(2)} &nbsp;•&nbsp; Lucro: R$ ${Number(entry.profit || 0).toFixed(2)} &nbsp;•&nbsp; Margem: ${Number(entry.margin || 0).toFixed(2)}%</div>
-                    <div class="text-sm text-gray-600">Comissão: ${Number(entry.commissionPercent || 0).toFixed(2)}% • Taxa de pagamento: ${Number(entry.paymentFeePercent || 0).toFixed(2)}%</div>
-                  </div>
-                </div>
-                <div class="flex flex-col items-end gap-2">
-                  <button @click="${() => this.deleteHistory(i4)}" class="px-2 py-1 bg-yellow-500 text-white rounded text-sm">Deletar</button>
-                </div>
-              </li>
-            `)}
-          </ul>
-        `}
-      </div>
-    </div>
-  `;
+<div class="mt-6 bg-white p-4 rounded-lg shadow">
+<div class="flex items-center justify-between">
+<h3 class="text-lg font-semibold text-gray-800">Histórico de Cálculos</h3>
+<div class="flex items-center gap-2">
+<button @click="${() => this.clearHistory()}" class="px-3 py-1 bg-red-600 text-white rounded text-sm">Limpar tudo</button>
+<button @click="${() => this.exportCsv()}" class="px-3 py-1 bg-green-600 text-white rounded text-sm">Exportar CSV</button>
+</div>
+</div>
+<div class="mt-4">
+${history.length === 0 ? Z`<p class="text-gray-600">Nenhum registro salvo ainda. Use "Salvar histórico" após um cálculo para criar entradas.</p>` : Z`
+<ul class="space-y-3">
+${history.map((entry, i4) => Z`
+<li class="border rounded p-3 flex justify-between items-start bg-gray-50">
+<div>
+<div class="text-sm text-gray-500">${new Date(entry.date).toLocaleString("pt-BR")}</div>
+<div class="mt-1 text-gray-800">
+<div>Preço: R$ ${Number(entry.price || 0).toFixed(2)} &nbsp;•&nbsp; Lucro: R$ ${Number(entry.profit || 0).toFixed(2)} &nbsp;•&nbsp; Margem: ${Number(entry.margin || 0).toFixed(2)}%</div>
+<div class="text-sm text-gray-600">Comissão: ${Number(entry.commissionPercent || 0).toFixed(2)}% • Taxa de pagamento: ${Number(entry.paymentFeePercent || 0).toFixed(2)}%</div>
+</div>
+</div>
+<div class="flex flex-col items-end gap-2">
+<button @click="${() => this.deleteHistory(i4)}" class="px-2 py-1 bg-yellow-500 text-white rounded text-sm">Deletar</button>
+</div>
+</li>
+`)}
+</ul>
+`}
+</div>
+</div>
+`;
   }
   renderInputs() {
     const c4 = this.compute();
     return Z`
-  <div class="max-w-3xl mx-auto p-4 bg-white rounded-lg shadow">
-    <h2 class="text-xl font-semibold mb-4 text-gray-800">Calculadora de Taxas - Shopee</h2>
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <label class="block">
-        <span class="text-sm text-gray-600">Preço de venda (R$)</span>
-        <input name="price" type="number" step="0.01" .value="${this.price}" @input="${(e5) => this.onInputNumber(e5)}" class="mt-1 block w-full rounded border-gray-200 p-2" />
-      </label>
-      <label class="block">
-        <span class="text-sm text-gray-600">Custo do produto (R$)</span>
-        <input name="cost" type="number" step="0.01" .value="${this.cost}" @input="${(e5) => this.onInputNumber(e5)}" class="mt-1 block w-full rounded border-gray-200 p-2" />
-      </label>
-      <label class="block">
-        <span class="text-sm text-gray-600">Frete (R$)</span>
-        <input name="freight" type="number" step="0.01" .value="${this.freight}" @input="${(e5) => this.onInputNumber(e5)}" class="mt-1 block w-full rounded border-gray-200 p-2" />
-      </label>
-      <label class="block">
-        <span class="text-sm text-gray-600">Desconto / Cupom (R$)</span>
-        <input name="discount" type="number" step="0.01" .value="${this.discount}" @input="${(e5) => this.onInputNumber(e5)}" class="mt-1 block w-full rounded border-gray-200 p-2" />
-      </label>
-      <label class="block">
-        <span class="text-sm text-gray-600">Comissão da plataforma (%)</span>
-        <input name="commissionPercent" type="number" step="0.01" .value="${this.commissionPercent}" @input="${(e5) => this.onInputNumber(e5)}" class="mt-1 block w-full rounded border-gray-200 p-2" />
-      </label>
-      <label class="block">
-        <span class="text-sm text-gray-600">Taxa de pagamento (%)</span>
-        <input name="paymentFeePercent" type="number" step="0.01" .value="${this.paymentFeePercent}" @input="${(e5) => this.onInputNumber(e5)}" class="mt-1 block w-full rounded border-gray-200 p-2" />
-      </label>
-    </div>
-    <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-      <div class="bg-gray-50 p-4 rounded">
-        <h3 class="font-semibold text-gray-700">Resumo de taxas</h3>
-        <div class="mt-2 text-gray-800">
-          <div class="flex justify-between"><span>Comissão (${this.commissionPercent}%):</span><span>R$ ${c4.commissionValue.toFixed(2)}</span></div>
-          <div class="flex justify-between"><span>Taxa de pagamento (${this.paymentFeePercent}%):</span><span>R$ ${c4.paymentFeeValue.toFixed(2)}</span></div>
-          <div class="flex justify-between font-semibold mt-2"><span>Total de taxas:</span><span>R$ ${c4.totalFees.toFixed(2)}</span></div>
-        </div>
-      </div>
-      <div class="bg-gray-50 p-4 rounded">
-        <h3 class="font-semibold text-gray-700">Resultado financeiro</h3>
-        <div class="mt-2 text-gray-800">
-          <div class="flex justify-between"><span>Custo total (produto + frete + taxas):</span><span>R$ ${c4.costTotal.toFixed(2)}</span></div>
-          <div class="flex justify-between"><span>Lucro líquido:</span><span>R$ ${c4.profit.toFixed(2)}</span></div>
-          <div class="flex justify-between"><span>Margem:</span><span>${c4.margin.toFixed(2)}%</span></div>
-        </div>
-      </div>
-    </div>
-    <div class="mt-6 flex gap-3">
-      <button @click="${() => this.saveHistory()}" class="px-4 py-2 bg-blue-600 text-white rounded">Salvar histórico</button>
-      <button @click="${() => this.exportCsv()}" class="px-4 py-2 bg-green-600 text-white rounded">Exportar CSV</button>
-    </div>
-    ${this.renderHistory()}
-  </div>
-  `;
+<div class="max-w-3xl mx-auto p-4 bg-white rounded-lg shadow">
+<h2 class="text-xl font-semibold mb-4 text-gray-800">Calculadora de Taxas - Shopee</h2>
+<hr>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<label class="block">
+<span class="text-sm text-gray-600">Preço de venda (R$)</span>
+<input name="price" type="number" step="0.01" .value="${this.price}" @input="${(e5) => this.onInputNumber(e5)}" class="mt-1 block w-full rounded border-gray-200 p-2" />
+</label>
+<label class="block">
+<span class="text-sm text-gray-600">Custo do produto (R$)</span>
+<input name="cost" type="number" step="0.01" .value="${this.cost}" @input="${(e5) => this.onInputNumber(e5)}" class="mt-1 block w-full rounded border-gray-200 p-2" />
+</label>
+<label class="block">
+<span class="text-sm text-gray-600">Frete (R$)</span>
+<input name="freight" type="number" step="0.01" .value="${this.freight}" @input="${(e5) => this.onInputNumber(e5)}" class="mt-1 block w-full rounded border-gray-200 p-2" />
+</label>
+<label class="block">
+<span class="text-sm text-gray-600">Desconto / Cupom (R$)</span>
+<input name="discount" type="number" step="0.01" .value="${this.discount}" @input="${(e5) => this.onInputNumber(e5)}" class="mt-1 block w-full rounded border-gray-200 p-2" />
+</label>
+<label class="block">
+<span class="text-sm text-gray-600">Comissão da plataforma (%)</span>
+<input name="commissionPercent" type="number" step="0.01" .value="${this.commissionPercent}" @input="${(e5) => this.onInputNumber(e5)}" class="mt-1 block w-full rounded border-gray-200 p-2" />
+</label>
+<label class="block">
+<span class="text-sm text-gray-600">Taxa de pagamento (%)</span>
+<input name="paymentFeePercent" type="number" step="0.01" .value="${this.paymentFeePercent}" @input="${(e5) => this.onInputNumber(e5)}" class="mt-1 block w-full rounded border-gray-200 p-2" />
+</label>
+</div>
+<div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+<div class="bg-gray-50 p-4 rounded">
+<h3 class="font-semibold text-gray-700">Resumo de taxas</h3>
+<div class="mt-2 text-gray-800">
+<div class="flex justify-between"><span>Comissão (${this.commissionPercent}%):</span><span>R$ ${c4.commissionValue.toFixed(2)}</span></div>
+<div class="flex justify-between"><span>Taxa de pagamento (${this.paymentFeePercent}%):</span><span>R$ ${c4.paymentFeeValue.toFixed(2)}</span></div>
+<div class="flex justify-between font-semibold mt-2"><span>Total de taxas:</span><span>R$ ${c4.totalFees.toFixed(2)}</span></div>
+</div>
+</div>
+<div class="bg-gray-50 p-4 rounded">
+<h3 class="font-semibold text-gray-700">Resultado financeiro</h3>
+<div class="mt-2 text-gray-800">
+<div class="flex justify-between"><span>Custo total (produto + frete + taxas):</span><span>R$ ${c4.costTotal.toFixed(2)}</span></div>
+<div class="flex justify-between"><span>Lucro líquido:</span><span>R$ ${c4.profit.toFixed(2)}</span></div>
+<div class="flex justify-between"><span>Margem:</span><span>${c4.margin.toFixed(2)}%</span></div>
+</div>
+</div>
+</div>
+<div class="mt-6 flex gap-3">
+<button @click="${() => this.saveHistory()}" class="px-4 py-2 bg-blue-600 text-white rounded">Salvar histórico</button>
+<button @click="${() => this.exportCsv()}" class="px-4 py-2 bg-green-600 text-white rounded">Exportar CSV</button>
+</div>
+${this.renderHistory()}
+</div>
+`;
   }
   render() {
     return Z`
-    <div class="p-4">
-      ${this.renderInputs()}
-    </div>
-  `;
+<div class="p-[1em]">
+${this.renderInputs()}
+</div>
+`;
   }
 };
 EcommerceShopeeFeeCalculator102022 = __decorate4([
@@ -7730,7 +7459,7 @@ var EcommerceShopeeFeeCalculator1020223 = class EcommerceShopeeFeeCalculator1020
   initPage() {
     setState("ui.mdm.pageTitle.title", `Calculadora de Taxas - Shopee`);
     const savedConfig = getState("ui.shopeeFeeCalculator.config");
-    initState2("ui.shopeeFeeCalculator.config", {
+    initState("ui.shopeeFeeCalculator.config", {
       commissionPercent: savedConfig?.commissionPercent ?? 12,
       paymentFeePercent: savedConfig?.paymentFeePercent ?? 2.5,
       currency: savedConfig?.currency ?? "BRL"
@@ -7866,100 +7595,101 @@ var EcommerceShopeeFeeCalculator1020223 = class EcommerceShopeeFeeCalculator1020
   renderHistory() {
     const history = this.getHistoryArray();
     return Z`
-    <div class="mt-6 bg-white p-4 rounded-lg shadow">
-      <div class="flex items-center justify-between">
-        <h3 class="text-lg font-semibold text-gray-800">Histórico de Cálculos</h3>
-        <div class="flex items-center gap-2">
-          <button @click="${() => this.clearHistory()}" class="px-3 py-1 bg-red-600 text-white rounded text-sm">Limpar tudo</button>
-          <button @click="${() => this.exportCsv()}" class="px-3 py-1 bg-green-600 text-white rounded text-sm">Exportar CSV</button>
-        </div>
-      </div>
-      <div class="mt-4">
-        ${history.length === 0 ? Z`<p class="text-gray-600">Nenhum registro salvo ainda. Use "Salvar histórico" após um cálculo para criar entradas.</p>` : Z`
-          <ul class="space-y-3">
-            ${history.map((entry, i4) => Z`
-              <li class="border rounded p-3 flex justify-between items-start bg-gray-50">
-                <div>
-                  <div class="text-sm text-gray-500">${new Date(entry.date).toLocaleString("pt-BR")}</div>
-                  <div class="mt-1 text-gray-800">
-                    <div>Preço: R$ ${Number(entry.price || 0).toFixed(2)} &nbsp;•&nbsp; Lucro: R$ ${Number(entry.profit || 0).toFixed(2)} &nbsp;•&nbsp; Margem: ${Number(entry.margin || 0).toFixed(2)}%</div>
-                    <div class="text-sm text-gray-600">Comissão: ${Number(entry.commissionPercent || 0).toFixed(2)}% • Taxa de pagamento: ${Number(entry.paymentFeePercent || 0).toFixed(2)}%</div>
-                  </div>
-                </div>
-                <div class="flex flex-col items-end gap-2">
-                  <button @click="${() => this.deleteHistory(i4)}" class="px-2 py-1 bg-yellow-500 text-white rounded text-sm">Deletar</button>
-                </div>
-              </li>
-            `)}
-          </ul>
-        `}
-      </div>
-    </div>
-  `;
+<div class="mt-6 bg-white p-4 rounded-lg shadow">
+<div class="flex items-center justify-between">
+<h3 class="text-lg font-semibold text-gray-800">Histórico de Cálculos</h3>
+<div class="flex items-center gap-2">
+<button @click="${() => this.clearHistory()}" class="px-3 py-1 bg-red-600 text-white rounded text-sm">Limpar tudo</button>
+<button @click="${() => this.exportCsv()}" class="px-3 py-1 bg-green-600 text-white rounded text-sm">Exportar CSV</button>
+</div>
+</div>
+<div class="mt-4">
+${history.length === 0 ? Z`<p class="text-gray-600">Nenhum registro salvo ainda. Use "Salvar histórico" após um cálculo para criar entradas.</p>` : Z`
+<ul class="space-y-3">
+${history.map((entry, i4) => Z`
+<li class="border rounded p-3 flex justify-between items-start bg-gray-50">
+<div>
+<div class="text-sm text-gray-500">${new Date(entry.date).toLocaleString("pt-BR")}</div>
+<div class="mt-1 text-gray-800">
+<div>Preço: R$ ${Number(entry.price || 0).toFixed(2)} &nbsp;•&nbsp; Lucro: R$ ${Number(entry.profit || 0).toFixed(2)} &nbsp;•&nbsp; Margem: ${Number(entry.margin || 0).toFixed(2)}%</div>
+<div class="text-sm text-gray-600">Comissão: ${Number(entry.commissionPercent || 0).toFixed(2)}% • Taxa de pagamento: ${Number(entry.paymentFeePercent || 0).toFixed(2)}%</div>
+</div>
+</div>
+<div class="flex flex-col items-end gap-2">
+<button @click="${() => this.deleteHistory(i4)}" class="px-2 py-1 bg-yellow-500 text-white rounded text-sm">Deletar</button>
+</div>
+</li>
+`)}
+</ul>
+`}
+</div>
+</div>
+`;
   }
   renderInputs() {
     const c4 = this.compute();
     return Z`
-  <div class="max-w-3xl mx-auto p-4 bg-white rounded-lg shadow">
-    <h2 class="text-xl font-semibold mb-4 text-gray-800">Calculadora de Taxas - Shopee</h2>
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <label class="block">
-        <span class="text-sm text-gray-600">Preço de venda (R$)</span>
-        <input name="price" type="number" step="0.01" .value="${this.price}" @input="${(e5) => this.onInputNumber(e5)}" class="mt-1 block w-full rounded border-gray-200 p-2" />
-      </label>
-      <label class="block">
-        <span class="text-sm text-gray-600">Custo do produto (R$)</span>
-        <input name="cost" type="number" step="0.01" .value="${this.cost}" @input="${(e5) => this.onInputNumber(e5)}" class="mt-1 block w-full rounded border-gray-200 p-2" />
-      </label>
-      <label class="block">
-        <span class="text-sm text-gray-600">Frete (R$)</span>
-        <input name="freight" type="number" step="0.01" .value="${this.freight}" @input="${(e5) => this.onInputNumber(e5)}" class="mt-1 block w-full rounded border-gray-200 p-2" />
-      </label>
-      <label class="block">
-        <span class="text-sm text-gray-600">Desconto / Cupom (R$)</span>
-        <input name="discount" type="number" step="0.01" .value="${this.discount}" @input="${(e5) => this.onInputNumber(e5)}" class="mt-1 block w-full rounded border-gray-200 p-2" />
-      </label>
-      <label class="block">
-        <span class="text-sm text-gray-600">Comissão da plataforma (%)</span>
-        <input name="commissionPercent" type="number" step="0.01" .value="${this.commissionPercent}" @input="${(e5) => this.onInputNumber(e5)}" class="mt-1 block w-full rounded border-gray-200 p-2" />
-      </label>
-      <label class="block">
-        <span class="text-sm text-gray-600">Taxa de pagamento (%)</span>
-        <input name="paymentFeePercent" type="number" step="0.01" .value="${this.paymentFeePercent}" @input="${(e5) => this.onInputNumber(e5)}" class="mt-1 block w-full rounded border-gray-200 p-2" />
-      </label>
-    </div>
-    <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-      <div class="bg-gray-50 p-4 rounded">
-        <h3 class="font-semibold text-gray-700">Resumo de taxas</h3>
-        <div class="mt-2 text-gray-800">
-          <div class="flex justify-between"><span>Comissão (${this.commissionPercent}%):</span><span>R$ ${c4.commissionValue.toFixed(2)}</span></div>
-          <div class="flex justify-between"><span>Taxa de pagamento (${this.paymentFeePercent}%):</span><span>R$ ${c4.paymentFeeValue.toFixed(2)}</span></div>
-          <div class="flex justify-between font-semibold mt-2"><span>Total de taxas:</span><span>R$ ${c4.totalFees.toFixed(2)}</span></div>
-        </div>
-      </div>
-      <div class="bg-gray-50 p-4 rounded">
-        <h3 class="font-semibold text-gray-700">Resultado financeiro</h3>
-        <div class="mt-2 text-gray-800">
-          <div class="flex justify-between"><span>Custo total (produto + frete + taxas):</span><span>R$ ${c4.costTotal.toFixed(2)}</span></div>
-          <div class="flex justify-between"><span>Lucro líquido:</span><span>R$ ${c4.profit.toFixed(2)}</span></div>
-          <div class="flex justify-between"><span>Margem:</span><span>${c4.margin.toFixed(2)}%</span></div>
-        </div>
-      </div>
-    </div>
-    <div class="mt-6 flex gap-3">
-      <button @click="${() => this.saveHistory()}" class="px-4 py-2 bg-blue-600 text-white rounded">Salvar histórico</button>
-      <button @click="${() => this.exportCsv()}" class="px-4 py-2 bg-green-600 text-white rounded">Exportar CSV</button>
-    </div>
-    ${this.renderHistory()}
-  </div>
-  `;
+<div class="max-w-3xl mx-auto p-4 bg-white rounded-lg shadow">
+<h2 class="text-xl font-semibold mb-4 text-gray-800">Calculadora de Taxas - Shopee</h2>
+<hr>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<label class="block">
+<span class="text-sm text-gray-600">Preço de venda (R$)</span>
+<input name="price" type="number" step="0.01" .value="${this.price}" @input="${(e5) => this.onInputNumber(e5)}" class="mt-1 block w-full rounded border-gray-200 p-2" />
+</label>
+<label class="block">
+<span class="text-sm text-gray-600">Custo do produto (R$)</span>
+<input name="cost" type="number" step="0.01" .value="${this.cost}" @input="${(e5) => this.onInputNumber(e5)}" class="mt-1 block w-full rounded border-gray-200 p-2" />
+</label>
+<label class="block">
+<span class="text-sm text-gray-600">Frete (R$)</span>
+<input name="freight" type="number" step="0.01" .value="${this.freight}" @input="${(e5) => this.onInputNumber(e5)}" class="mt-1 block w-full rounded border-gray-200 p-2" />
+</label>
+<label class="block">
+<span class="text-sm text-gray-600">Desconto / Cupom (R$)</span>
+<input name="discount" type="number" step="0.01" .value="${this.discount}" @input="${(e5) => this.onInputNumber(e5)}" class="mt-1 block w-full rounded border-gray-200 p-2" />
+</label>
+<label class="block">
+<span class="text-sm text-gray-600">Comissão da plataforma (%)</span>
+<input name="commissionPercent" type="number" step="0.01" .value="${this.commissionPercent}" @input="${(e5) => this.onInputNumber(e5)}" class="mt-1 block w-full rounded border-gray-200 p-2" />
+</label>
+<label class="block">
+<span class="text-sm text-gray-600">Taxa de pagamento (%)</span>
+<input name="paymentFeePercent" type="number" step="0.01" .value="${this.paymentFeePercent}" @input="${(e5) => this.onInputNumber(e5)}" class="mt-1 block w-full rounded border-gray-200 p-2" />
+</label>
+</div>
+<div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+<div class="bg-gray-50 p-4 rounded">
+<h3 class="font-semibold text-gray-700">Resumo de taxas</h3>
+<div class="mt-2 text-gray-800">
+<div class="flex justify-between"><span>Comissão (${this.commissionPercent}%):</span><span>R$ ${c4.commissionValue.toFixed(2)}</span></div>
+<div class="flex justify-between"><span>Taxa de pagamento (${this.paymentFeePercent}%):</span><span>R$ ${c4.paymentFeeValue.toFixed(2)}</span></div>
+<div class="flex justify-between font-semibold mt-2"><span>Total de taxas:</span><span>R$ ${c4.totalFees.toFixed(2)}</span></div>
+</div>
+</div>
+<div class="bg-gray-50 p-4 rounded">
+<h3 class="font-semibold text-gray-700">Resultado financeiro</h3>
+<div class="mt-2 text-gray-800">
+<div class="flex justify-between"><span>Custo total (produto + frete + taxas):</span><span>R$ ${c4.costTotal.toFixed(2)}</span></div>
+<div class="flex justify-between"><span>Lucro líquido:</span><span>R$ ${c4.profit.toFixed(2)}</span></div>
+<div class="flex justify-between"><span>Margem:</span><span>${c4.margin.toFixed(2)}%</span></div>
+</div>
+</div>
+</div>
+<div class="mt-6 flex gap-3">
+<button @click="${() => this.saveHistory()}" class="px-4 py-2 bg-blue-600 text-white rounded">Salvar histórico</button>
+<button @click="${() => this.exportCsv()}" class="px-4 py-2 bg-green-600 text-white rounded">Exportar CSV</button>
+</div>
+${this.renderHistory()}
+</div>
+`;
   }
   render() {
     return Z`
-    <div class="p-4">
-      ${this.renderInputs()}
-    </div>
-  `;
+<div class="p-[1em]">
+${this.renderInputs()}
+</div>
+`;
   }
 };
 EcommerceShopeeFeeCalculator1020223 = __decorate6([
